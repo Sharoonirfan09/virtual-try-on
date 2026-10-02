@@ -4,7 +4,7 @@
  * DEMO_MODE  → simulated locally. The result is a clearly-labelled demo
  *              composite (or the product's prepared `demoResultImage`).
  *              No AI call is made and the result is marked `mode: "demo"`.
- * API mode   → the photo and the product id are posted to /api/try-on.
+ * API mode   → the photo (resized) and the product id are posted to /api/try-on.
  *              Provider credentials live on the server only.
  */
 import { DEMO_MODE, DEMO_SETTINGS } from "@/lib/config";
@@ -115,7 +115,7 @@ async function requestLiveTryOn(
   signal?: AbortSignal,
 ): Promise<TryOnResult> {
   const body = new FormData();
-  body.append("personImage", personImage);
+  body.append("personImage", await downscaleForUpload(personImage));
   body.append("productId", garment.id);
 
   let res: Response;
@@ -135,6 +135,30 @@ async function requestLiveTryOn(
   }
 
   return { imageUrl: data.imageUrl, mode: "live", productId: garment.id, createdAt: Date.now() };
+}
+
+/**
+ * Keeps uploads well under the 4.5 MB serverless request limit. Phone photos
+ * are resized to a maximum of 1600px and re-encoded as JPEG.
+ */
+async function downscaleForUpload(file: File): Promise<File> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImage(url);
+    const max = 1600;
+    const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    if (scale === 1 && file.size < 2.5 * 1024 * 1024) return file;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.naturalWidth * scale);
+    canvas.height = Math.round(img.naturalHeight * scale);
+    canvas.getContext("2d")?.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.9));
+    return blob ? new File([blob], "photo.jpg", { type: "image/jpeg" }) : file;
+  } catch {
+    return file;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 /* ------------------------------------------------------------------ */

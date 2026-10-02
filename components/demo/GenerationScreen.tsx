@@ -75,9 +75,9 @@ function Processing() {
   const [progress, setProgress] = useState(4);
 
   useEffect(() => {
-    const m = setInterval(() => setIndex((i) => Math.min(i + 1, MESSAGES.length - 1)), 1100);
+    const m = setInterval(() => setIndex((i) => Math.min(i + 1, MESSAGES.length - 1)), DEMO_MODE ? 1100 : 4500);
     // Eases toward 96% — the real completion swaps the screen.
-    const p = setInterval(() => setProgress((v) => v + (96 - v) * 0.09), 120);
+    const p = setInterval(() => setProgress((v) => v + (96 - v) * (DEMO_MODE ? 0.09 : 0.012)), 120);
     return () => {
       clearInterval(m);
       clearInterval(p);
