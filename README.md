@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Virtual Try-On — Interactive Demo
 
-## Getting Started
-
-First, run the development server:
+A presentation-ready prototype: choose a garment → upload a photo → consent → AI try-on → result,
+followed by the brand story (QR in store, e-commerce, dashboard, analytics, privacy, business model).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev   # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Architecture, user journey and demo-state logic: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Personalise for a brand meeting
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| What                          | Where                                   |
+|-------------------------------|-----------------------------------------|
+| Brand name, logo, colours, contact email, website | `data/brandConfig.ts` |
+| Garments (name, SKU, image, product URL, status)  | `data/products.ts`    |
+| Garment images                | `public/garments/` (current files are placeholder artwork) |
+| Dashboard / analytics numbers | `data/demoAnalytics.ts` (illustrative only) |
 
-## Learn More
+Tip: set `demoResultImage` on a product to show a prepared try-on image in demo mode
+instead of the simple local composite.
 
-To learn more about Next.js, take a look at the following resources:
+## Demo mode vs live AI
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `NEXT_PUBLIC_DEMO_MODE=true` (default): generation is simulated in the browser (4–6 s). Results are
+  labelled as demo previews and marked `mode: "demo"`. No AI call is made.
+- `NEXT_PUBLIC_DEMO_MODE=false`: the photo and product id go to `POST /api/try-on`. Connect a provider in
+  `services/server/tryOnProvider.ts` and set `TRYON_PROVIDER_URL` / `TRYON_PROVIDER_API_KEY` (server only).
+  See `.env.example`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+UI components only call `generateTryOn()` in `services/tryOnService.ts`.
 
-## Deploy on Vercel
+## QR deep links
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`/?look=<productId>#try` opens a garment directly at the upload step. The QR codes on the page are real
+and encode this link for the current host — scan the tag in the "In store" section to try it.
